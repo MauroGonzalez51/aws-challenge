@@ -1,0 +1,8 @@
+.gitattributes
+.gitignore
+.env
+.env.*
+.gradle
+bin
+build
+out

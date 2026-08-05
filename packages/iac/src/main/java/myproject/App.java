@@ -64,5 +64,6 @@ public class App {
         ctx.export("dbPort", dbInstance.port());
         ctx.export("dbUsername", dbInstance.username());
         ctx.export("dbPassword", dbInstance.password());
+        ctx.export("dbName", dbInstance.dbName());
     }
 }

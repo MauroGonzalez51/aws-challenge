@@ -4,6 +4,18 @@ project:
 
 tasks:
     gradlew:
-        script: gradlew
+        command: ./gradlew
         options:
             interactive: true
+            runFromWorkspaceRoot: false
+
+    docker-build:
+        command: docker
+        args:
+            - build
+            - -f
+            - Dockerfile
+            - .
+        options:
+            cache: false
+            runFromWorkspaceRoot: false

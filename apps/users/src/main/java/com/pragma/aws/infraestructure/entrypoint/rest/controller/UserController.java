@@ -17,6 +17,8 @@ import com.pragma.aws.application.command.GetUserCommand;
 import com.pragma.aws.domain.port.in.CreateUserUseCase;
 import com.pragma.aws.domain.port.in.GetUserUseCase;
 import com.pragma.aws.infraestructure.entrypoint.rest.dto.request.CreateUserRequest;
+import com.pragma.aws.infraestructure.entrypoint.rest.dto.response.CreateUserResponse;
+import com.pragma.aws.infraestructure.entrypoint.rest.dto.response.GetUserResponse;
 import com.pragma.aws.infraestructure.entrypoint.rest.mapper.UserRestMapper;
 
 @RestController
@@ -31,16 +33,16 @@ public class UserController {
         this.mapper = mapper;
     }
 
-    @GetMapping("/user/{id}")
-    public ResponseEntity<?> getUser(@PathVariable Long id) {
+    @GetMapping("/users/{id}")
+    public ResponseEntity<GetUserResponse> getUser(@PathVariable Long id) {
         Optional<User> result = this.getUserUseCase.execute(new GetUserCommand(id));
 
         return result.map(mapper::toResponse).map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
-    @PostMapping("/user")
-    public ResponseEntity<?> createUser(@Valid @RequestBody CreateUserRequest request) {
+    @PostMapping("/users")
+    public ResponseEntity<CreateUserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
         User user = this.createUserUseCase
                 .execute(new CreateUserCommand(request.noIdentification(), request.name(), request.email()));
 
