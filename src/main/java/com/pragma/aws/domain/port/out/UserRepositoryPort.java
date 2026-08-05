@@ -7,4 +7,8 @@ public interface UserRepositoryPort {
     User save(User user);
 
     Optional<User> findById(Long id);
+
+    Optional<User> findByNoIdentification(String noIdentification);
+
+    Optional<User> findByEmail(String email);
 }

@@ -23,15 +23,24 @@ public class UserPersistencyAdapter implements UserRepositoryPort {
 
     @Override
     public Optional<User> findById(Long id) {
-        this.userRepository.findById(id).map(this::toDomain);
-        // return Optional.empty();
+        return this.userRepository.findById(id).map(UserPersistencyAdapter::toDomain);
+    }
+
+    @Override
+    public Optional<User> findByNoIdentification(String noIdentification) {
+        return this.userRepository.findByNoIdentification(noIdentification).map(UserPersistencyAdapter::toDomain);
+    }
+
+    @Override
+    public Optional<User> findByEmail(String email) {
+        return this.userRepository.findByEmail(email).map(UserPersistencyAdapter::toDomain);
     }
 
     private UserEntity toEntity(User user) {
         return new UserEntity(user.getId(), user.getNoIdentification(), user.getName(), user.getEmail());
     }
 
-    private User toDomain(UserEntity entity) {
+    private static User toDomain(UserEntity entity) {
         return new User(entity.getId(), entity.getNoIdentification(), entity.getName(), entity.getEmail());
     }
 }
