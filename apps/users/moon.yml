@@ -1,0 +1,9 @@
+project:
+    title: users
+    description: users service
+
+tasks:
+    gradlew:
+        script: gradlew
+        options:
+            interactive: true

@@ -1,0 +1,4 @@
+{
+    "java.search.scope": "all",
+    "java.compile.nullAnalysis.mode": "automatic"
+}
