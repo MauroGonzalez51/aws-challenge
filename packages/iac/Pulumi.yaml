@@ -1,0 +1,7 @@
+name: iac
+description: infraestructure for aws challenge
+runtime: java
+config:
+    pulumi:tags:
+        value:
+            pulumi:template: aws-java

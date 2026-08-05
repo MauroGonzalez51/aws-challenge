@@ -1,0 +1,9 @@
+project:
+    title: IAC
+    description: infraestructure as code for aws challenge
+
+tasks:
+    pulumi:
+        command: pulumi
+        options:
+            interactive: true

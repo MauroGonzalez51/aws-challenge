@@ -1,4 +1,6 @@
 {
     "java.search.scope": "all",
-    "java.compile.nullAnalysis.mode": "automatic"
+    "java.compile.nullAnalysis.mode": "automatic",
+    "java.project.sourcePaths": ["apps/users", "packages/iac"],
+    "java.configuration.updateBuildConfiguration": "interactive"
 }
