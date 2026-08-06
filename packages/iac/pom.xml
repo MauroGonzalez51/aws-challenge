@@ -10,9 +10,9 @@
 
     <properties>
         <encoding>UTF-8</encoding>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.release>11</maven.compiler.release>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
         <mainClass>myproject.App</mainClass>
         <mainArgs />
     </properties>
@@ -32,6 +32,18 @@
             <groupId>com.pulumi</groupId>
             <artifactId>random</artifactId>
             <version>4.21.1</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.20.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.pulumi</groupId>
+            <artifactId>docker</artifactId>
+            <version>5.1.0</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>

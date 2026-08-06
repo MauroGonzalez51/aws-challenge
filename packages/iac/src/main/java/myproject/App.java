@@ -1,69 +1,50 @@
 package myproject;
 
-import com.pulumi.Pulumi;
-
 import java.util.List;
 
+import com.pulumi.Pulumi;
 import com.pulumi.Context;
-import com.pulumi.aws.rds.Instance;
-import com.pulumi.aws.rds.InstanceArgs;
-import com.pulumi.aws.ec2.SecurityGroup;
-import com.pulumi.aws.ec2.SecurityGroupArgs;
-import com.pulumi.aws.ec2.inputs.SecurityGroupEgressArgs;
-import com.pulumi.aws.ec2.inputs.SecurityGroupIngressArgs;
-import com.pulumi.random.RandomPassword;
-import com.pulumi.random.RandomPasswordArgs;
+import com.pulumi.core.Output;
+import myproject.resources.ECR;
+import myproject.resources.ALB;
+import myproject.resources.ECS;
+import myproject.resources.RDS;
+import myproject.resources.ApiGateway;
 
 public class App {
     public static void main(String[] args) {
         Pulumi.run(App::stack);
     }
 
-    public static void stack(Context ctx) {
-        SecurityGroup securityGroup = new SecurityGroup("db-security-group",
-                SecurityGroupArgs.builder()
-                        .description("allow public access to db")
-                        .ingress(
-                                SecurityGroupIngressArgs
-                                        .builder()
-                                        .protocol("tcp")
-                                        .fromPort(5432)
-                                        .toPort(5432)
-                                        .cidrBlocks("0.0.0.0/0").build())
-                        .egress(
-                                SecurityGroupEgressArgs
-                                        .builder()
-                                        .protocol("-1")
-                                        .fromPort(0)
-                                        .toPort(0)
-                                        .cidrBlocks("0.0.0.0/0")
-                                        .build())
-                        .build());
+    public static void stack(Context context) {
+        // Task 2: Create ECR repository and build + push the Docker image
+        var ecr = ECR.setup();
 
-        Instance dbInstance = new Instance("db-instance",
-                InstanceArgs.builder()
-                        .engine("postgres")
-                        .instanceClass("db.t3.micro")
-                        .allocatedStorage(20)
-                        .dbName("aws_users")
-                        .username("users_admin")
-                        .password(new RandomPassword("db-password",
-                                RandomPasswordArgs
-                                        .builder()
-                                        .length(16)
-                                        .special(true)
-                                        .overrideSpecial("_%@")
-                                        .build())
-                                .result())
-                        .publiclyAccessible(true)
-                        .skipFinalSnapshot(true)
-                        .vpcSecurityGroupIds(securityGroup.id().applyValue(List::of))
-                        .build());
+        // Task 4-5: Configure networking, security groups, and load balancer
+        var alb = ALB.setup();
 
-        ctx.export("dbHost", dbInstance.address());
-        ctx.export("dbPort", dbInstance.port());
-        ctx.export("dbUsername", dbInstance.username());
-        ctx.export("dbPassword", dbInstance.password());
-        ctx.export("dbName", dbInstance.dbName());
+        // Task 7: RDS PostgreSQL database (only accessible from ECS tasks)
+        var rds = RDS.setup(alb.vpcId(), alb.ecsSecurityGroup().id().applyValue(List::of));
+
+        // Task 3: Provision ECS cluster, task definition, and service
+        var ecs = ECS.setup(
+                ecr.image(),
+                rds.instance(),
+                alb.targetGroup().arn(),
+                alb.subnetIds(),
+                alb.ecsSecurityGroup().id().applyValue(List::of));
+
+        // Task 6: Configure API Gateway endpoints (POST /users, GET /users/{id})
+        var apiGw = ApiGateway.setup(alb.loadBalancer());
+
+        // Exports
+        context.export("ECR_REPOSITORY_URL", ecr.repository().repositoryUrl());
+        context.export("IMAGE_URI", ecr.image().imageName());
+        context.export("ALB_DNS_NAME", alb.loadBalancer().dnsName());
+        context.export("ECS_CLUSTER_NAME", ecs.cluster().name());
+        context.export("API_GATEWAY_URL", Output.all(apiGw.api().apiEndpoint(), apiGw.stage().name())
+                .applyValue(values -> String.format("%s/%s", values.get(0), values.get(1))));
+        context.export("DB_HOST", rds.instance().address());
+        context.export("DB_NAME", rds.instance().dbName());
     }
 }

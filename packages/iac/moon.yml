@@ -7,3 +7,6 @@ tasks:
         command: pulumi
         options:
             interactive: true
+
+    mvn:
+        command: mvn

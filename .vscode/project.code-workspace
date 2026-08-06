@@ -1,0 +1,20 @@
+{
+    "folders": [
+        {
+            "path": "../",
+            "name": "ROOT"
+        },
+        {
+            "path": "../apps/users",
+            "name": "[ APP ] Users"
+        },
+        {
+            "path": "../packages/iac",
+            "name": "[ PACKAGES ] IAC"
+        }
+    ],
+    "settings": {
+        "java.compile.nullAnalysis.mode": "automatic",
+        "java.configuration.updateBuildConfiguration": "interactive"
+    }
+}
