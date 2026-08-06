@@ -18,4 +18,5 @@ tasks:
             - .
         options:
             cache: false
+            interactive: true
             runFromWorkspaceRoot: false

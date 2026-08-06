@@ -42,10 +42,10 @@ public class App {
 
         Instance dbInstance = new Instance("db-instance",
                 InstanceArgs.builder()
-                        .engine("postgresql")
+                        .engine("postgres")
                         .instanceClass("db.t3.micro")
                         .allocatedStorage(20)
-                        .dbName("aws-users")
+                        .dbName("aws_users")
                         .username("users_admin")
                         .password(new RandomPassword("db-password",
                                 RandomPasswordArgs
