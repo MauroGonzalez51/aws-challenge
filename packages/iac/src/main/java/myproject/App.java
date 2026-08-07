@@ -5,11 +5,7 @@ import java.util.List;
 import com.pulumi.Pulumi;
 import com.pulumi.Context;
 import com.pulumi.core.Output;
-import myproject.resources.ECR;
-import myproject.resources.ALB;
-import myproject.resources.ECS;
-import myproject.resources.RDS;
-import myproject.resources.ApiGateway;
+import myproject.resources.*;
 
 public class App {
     public static void main(String[] args) {
@@ -34,8 +30,10 @@ public class App {
                 alb.subnetIds(),
                 alb.ecsSecurityGroup().id().applyValue(List::of));
 
+        var cognito = Cognito.setup();
+
         // Task 6: Configure API Gateway endpoints (POST /users, GET /users/{id})
-        var apiGw = ApiGateway.setup(alb.loadBalancer());
+        var apiGw = ApiGateway.setup(alb.loadBalancer(), cognito.userPool(), cognito.userPoolClient());
 
         // Exports
         context.export("ECR_REPOSITORY_URL", ecr.repository().repositoryUrl());
@@ -46,5 +44,8 @@ public class App {
                 .applyValue(values -> String.format("%s/%s", values.get(0), values.get(1))));
         context.export("DB_HOST", rds.instance().address());
         context.export("DB_NAME", rds.instance().dbName());
+        context.export("USER_POOL_ID", cognito.userPool().id());
+        context.export("USER_POOL_ENDPOINT", cognito.userPool().endpoint());
+        context.export("USER_POOL_CLIENT_ID", cognito.userPoolClient().id());
     }
 }

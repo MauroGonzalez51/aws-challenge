@@ -1,5 +1,6 @@
 package myproject.resources;
 
+import java.util.List;
 import com.pulumi.aws.apigatewayv2.Api;
 import com.pulumi.aws.apigatewayv2.ApiArgs;
 import com.pulumi.aws.apigatewayv2.Integration;
@@ -8,20 +9,25 @@ import com.pulumi.aws.apigatewayv2.Route;
 import com.pulumi.aws.apigatewayv2.RouteArgs;
 import com.pulumi.aws.apigatewayv2.Stage;
 import com.pulumi.aws.apigatewayv2.StageArgs;
+import com.pulumi.aws.apigatewayv2.Authorizer;
+import com.pulumi.aws.apigatewayv2.AuthorizerArgs;
+import com.pulumi.aws.apigatewayv2.inputs.AuthorizerJwtConfigurationArgs;
 import com.pulumi.aws.lb.LoadBalancer;
+import com.pulumi.aws.cognito.UserPool;
+import com.pulumi.aws.cognito.UserPoolClient;
 import com.pulumi.core.Output;
 
 public class ApiGateway {
     public record ApiGatewayResult(Api api, Stage stage) {
     }
 
-    public record ApiGatewayConfig(String apiName, String stageName) {
+    public record ApiGatewayConfig(String apiName, String stageName, String authorizerName) {
         public static final ApiGatewayConfig DEFAULT = new ApiGatewayConfig(
                 "users-service-api",
-                "prod");
+                "prod", "authorizer");
     }
 
-    public static ApiGatewayResult setup(LoadBalancer loadBalancer) {
+    public static ApiGatewayResult setup(LoadBalancer loadBalancer, UserPool userPool, UserPoolClient userPoolClient) {
         var config = ApiGatewayConfig.DEFAULT;
 
         // HTTP API Gateway — lightweight proxy that routes requests to the ALB
@@ -29,6 +35,19 @@ public class ApiGateway {
                 ApiArgs.builder()
                         .name(config.apiName())
                         .protocolType("HTTP")
+                        .build());
+
+        var authorizer = new Authorizer(config.authorizerName(),
+                AuthorizerArgs.builder()
+                        .apiId(api.id())
+                        .authorizerType("JWT")
+                        .identitySources("$request.header.Authorization")
+                        .jwtConfiguration(
+                                AuthorizerJwtConfigurationArgs
+                                        .builder()
+                                        .issuer(userPool.endpoint()
+                                                .applyValue((endpoint) -> String.format("https://%s", endpoint)))
+                                        .audiences(userPoolClient.id().applyValue(List::of)).build())
                         .build());
 
         // Base URL of the ALB
@@ -61,6 +80,8 @@ public class ApiGateway {
                         .apiId(api.id())
                         .routeKey("POST /users")
                         .target(postIntegration.id().applyValue(id -> "integrations/" + id))
+                        .authorizerId(authorizer.id())
+                        .authorizationType("JWT")
                         .build());
 
         // Route: GET /users/{id} — maps to getUser endpoint
@@ -69,6 +90,8 @@ public class ApiGateway {
                         .apiId(api.id())
                         .routeKey("GET /users/{id}")
                         .target(getIntegration.id().applyValue(id -> "integrations/" + id))
+                        .authorizerId(authorizer.id())
+                        .authorizationType("JWT")
                         .build());
 
         // Stage — auto-deploy enabled so routes are immediately available
