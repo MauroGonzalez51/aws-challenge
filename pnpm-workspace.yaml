@@ -1,0 +1,23 @@
+preferSymlinkedExecutables: true
+shellEmulator: true
+trustPolicy: no-downgrade
+linkWorkspacePackages: true
+injectWorkspacePackages: true
+
+trustPolicyExclude:
+    - chokidar@4.0.3
+    - semver@5.7.2
+
+packages:
+    - apps/**/*
+    - packages/**/*
+    - tools/**/*
+
+allowBuilds:
+    aws-sdk: true
+    es5-ext: true
+    esbuild: true
+    serverless: true
+
+overrides:
+    typescript: 6.0.3

@@ -2,19 +2,23 @@
     "folders": [
         {
             "path": "../",
-            "name": "ROOT"
+            "name": "ROOT",
         },
         {
             "path": "../apps/users",
-            "name": "[ APP ] Users"
+            "name": "[ APP ] Users",
+        },
+        {
+            "path": "../apps/serverless/node",
+            "name": "[ APP ] Serverless-Node",
         },
         {
             "path": "../packages/iac",
-            "name": "[ PACKAGES ] IAC"
-        }
+            "name": "[ PACKAGES ] IAC",
+        },
     ],
     "settings": {
         "java.compile.nullAnalysis.mode": "automatic",
-        "java.configuration.updateBuildConfiguration": "interactive"
-    }
+        "java.configuration.updateBuildConfiguration": "interactive",
+    },
 }
