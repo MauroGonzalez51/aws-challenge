@@ -14,9 +14,11 @@ import com.pulumi.aws.ecs.inputs.ServiceLoadBalancerArgs;
 import com.pulumi.aws.ecs.inputs.ServiceNetworkConfigurationArgs;
 import com.pulumi.aws.iam.Role;
 import com.pulumi.aws.iam.RoleArgs;
+import com.pulumi.aws.iam.RolePolicy;
+import com.pulumi.aws.iam.RolePolicyArgs;
 import com.pulumi.aws.iam.RolePolicyAttachment;
 import com.pulumi.aws.iam.RolePolicyAttachmentArgs;
-import com.pulumi.aws.rds.Instance;
+import com.pulumi.core.Either;
 import com.pulumi.core.Output;
 import com.pulumi.docker.Image;
 
@@ -38,7 +40,7 @@ public class ECS {
                 "1024");
     }
 
-    public static ECSResult setup(Image image, Instance dbInstance, Output<String> targetGroupArn,
+    public static ECSResult setup(Image image, Parameters.ParametersResult parameters, Output<String> targetGroupArn,
             Output<List<String>> subnetIds, Output<List<String>> securityGroupIds) {
         var config = ECSConfig.DEFAULT;
 
@@ -76,13 +78,36 @@ public class ECS {
                         .policyArn("arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy")
                         .build());
 
+        Output<String> ssmSecretsPolicy = Output
+                .all(parameters.dbHost().arn(), parameters.dbPort().arn(), parameters.dbUsername().arn(),
+                        parameters.dbPassword().arn(), parameters.dbName().arn())
+                .applyValue(arns -> String.format("""
+                             {
+                              "Version": "2012-10-17",
+                              "Statement": [
+                                  {
+                                      "Effect": "Allow",
+                                      "Action": ["ssm:GetParameters"],
+                                      "Resource": ["%s", "%s", "%s", "%s"]
+                                  },
+                                  {
+                                      "Effect": "Allow",
+                                      "Action": ["secretsmanager:GetSecretValue"],
+                                      "Resource": "%s"
+                                  }
+                              ]
+                          }
+                        """, arns.get(0), arns.get(1), arns.get(2), arns.get(4), arns.get(3)));
+
+        new RolePolicy("ecs-ssm-secrets-poliy",
+                RolePolicyArgs.builder().role(executionRole.name()).policy(ssmSecretsPolicy.applyValue(Either::ofLeft))
+                        .build());
+
         // Build the container definition JSON with image URI, DB credentials, and log
         // config
         Output<String> containerDefinition = Output
-                .all(image.imageName(), logGroup.name(), dbInstance.address(),
-                        dbInstance.port().applyValue(String::valueOf),
-                        dbInstance.username(), dbInstance.password().applyValue(p -> p.orElse("")),
-                        dbInstance.dbName())
+                .all(image.imageName(), logGroup.name(), parameters.dbHost().arn(), parameters.dbPort().arn(),
+                        parameters.dbUsername().arn(), parameters.dbPassword().arn(), parameters.dbName().arn())
                 .applyValue(values -> {
                     String imageUri = (String) values.get(0);
                     String logGroupName = (String) values.get(1);
@@ -102,12 +127,12 @@ public class ECS {
                                     "hostPort": %d,
                                     "protocol": "tcp"
                                 }],
-                                "environment": [
-                                    {"name": "DB_HOST", "value": "%s"},
-                                    {"name": "DB_PORT", "value": "%s"},
-                                    {"name": "DB_USER", "value": "%s"},
-                                    {"name": "DB_PASSWORD", "value": "%s"},
-                                    {"name": "DB_NAME", "value": "%s"}
+                                "secrets": [
+                                    {"name": "DB_HOST", "valueFrom": "%s"},
+                                    {"name": "DB_PORT", "valueFrom": "%s"},
+                                    {"name": "DB_USER", "valueFrom": "%s"},
+                                    {"name": "DB_PASSWORD", "valueFrom": "%s"},
+                                    {"name": "DB_NAME", "valueFrom": "%s"}
                                 ],
                                 "logConfiguration": {
                                     "logDriver": "awslogs",
@@ -119,7 +144,9 @@ public class ECS {
                                 }
                             }]
                             """, config.containerName(), imageUri, config.containerPort(),
-                            config.containerPort(), dbHost, dbPort, dbUser, dbPassword, dbName,
+                            config.containerPort(), dbHost, dbPort, dbUser,
+                            dbPassword,
+                            dbName,
                             logGroupName);
                 });
 

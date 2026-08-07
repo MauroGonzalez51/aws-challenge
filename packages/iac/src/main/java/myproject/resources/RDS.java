@@ -13,7 +13,7 @@ import com.pulumi.random.RandomPassword;
 import com.pulumi.random.RandomPasswordArgs;
 
 public class RDS {
-    public record RDSResult(Instance instance, SecurityGroup securityGroup) {
+    public record RDSResult(Instance instance, RandomPassword dbPassword, SecurityGroup securityGroup) {
     }
 
     public record RDSConfig(String instanceName, String securityGroupName, String passwordResourceName,
@@ -78,6 +78,6 @@ public class RDS {
                         .vpcSecurityGroupIds(dbSecurityGroup.id().applyValue(List::of))
                         .build());
 
-        return new RDSResult(dbInstance, dbSecurityGroup);
+        return new RDSResult(dbInstance, dbPassword, dbSecurityGroup);
     }
 }

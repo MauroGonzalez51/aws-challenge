@@ -22,10 +22,12 @@ public class App {
         // Task 7: RDS PostgreSQL database (only accessible from ECS tasks)
         var rds = RDS.setup(alb.vpcId(), alb.ecsSecurityGroup().id().applyValue(List::of));
 
+        var parameters = Parameters.setup(rds.instance(), rds.dbPassword());
+
         // Task 3: Provision ECS cluster, task definition, and service
         var ecs = ECS.setup(
                 ecr.image(),
-                rds.instance(),
+                parameters,
                 alb.targetGroup().arn(),
                 alb.subnetIds(),
                 alb.ecsSecurityGroup().id().applyValue(List::of));
