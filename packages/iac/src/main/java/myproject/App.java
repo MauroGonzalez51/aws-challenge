@@ -32,6 +32,9 @@ public class App {
                 alb.subnetIds(),
                 alb.ecsSecurityGroup().id().applyValue(List::of));
 
+        // CloudWatch Alarms — ECS CPU and ALB 5XX monitoring
+        Alarms.setup(ecs.cluster(), ecs.service(), alb.loadBalancer());
+
         var cognito = Cognito.setup();
 
         // Task 6: Configure API Gateway endpoints (POST /users, GET /users/{id})
