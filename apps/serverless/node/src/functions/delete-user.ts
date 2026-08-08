@@ -1,14 +1,42 @@
-import type { AppEnvironment } from "@/index";
 import { DeleteCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { swaggerUI } from "@hono/swagger-ui";
 import { Hono } from "hono";
-import { describeRoute, resolver } from "hono-openapi";
+import { describeRoute, openAPIRouteHandler, resolver } from "hono-openapi";
 import { env } from "hono/adapter";
+import { handle } from "hono/aws-lambda";
+import { cors } from "hono/cors";
+import { dynamoDBClient } from "@/lib/client";
+import { consola } from "@/lib/logger";
 import { ErrorSchema } from "@/models";
 
-const router = new Hono<AppEnvironment>();
+const app = new Hono();
+const { docClient } = dynamoDBClient();
 
-router.delete(
-    "/:userId",
+app.use("/*", cors());
+
+app.get(
+    "/docs/delete-user/openapi",
+    openAPIRouteHandler(app, {
+        documentation: {
+            info: {
+                title: "Get User",
+                version: "1.0.0",
+                description: "Get User information based on userId",
+            },
+            servers: [
+                {
+                    url: "http://localhost:3000/",
+                    description: "Local Server",
+                },
+            ],
+        },
+    }),
+);
+
+app.get("/docs/delete-user/swagger", swaggerUI({ url: "/docs/delete-user/openapi" }));
+
+app.delete(
+    "/users/:userId",
     describeRoute({
         description: "delete a user record by userId",
         responses: {
@@ -32,8 +60,6 @@ router.delete(
     }),
     async (context) => {
         const { USERS_TABLE } = env<{ USERS_TABLE: string | undefined }>(context);
-        const { docClient } = context.var.container.get("client");
-        const logger = context.var.container.get("logger");
 
         const userId = context.req.param("userId");
 
@@ -55,7 +81,7 @@ router.delete(
 
             return context.body(null, 204);
         } catch (error) {
-            logger.error(error);
+            consola.error(error);
 
             context.status(500);
             return context.json({
@@ -65,4 +91,4 @@ router.delete(
     },
 );
 
-export { router };
+export const handler = handle(app);

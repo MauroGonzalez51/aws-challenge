@@ -53,11 +53,99 @@ export default {
         },
     },
     functions: {
-        api: {
-            handler: "src/index.handler",
+        createUser: {
+            handler: "src/functions/create-user.handler",
             events: [
                 {
-                    httpApi: "*",
+                    httpApi: {
+                        method: "POST",
+                        path: "/users",
+                    },
+                },
+                {
+                    httpApi: {
+                        method: "GET",
+                        path: "/docs/create-user/{proxy+}",
+                    },
+                },
+            ],
+            iamRoleStatements: [
+                {
+                    Effect: "Allow",
+                    Action: ["dynamodb::PutItem"],
+                    Resource: { "Fn::GetAtt": ["UsersTable", "Arn"] },
+                },
+            ],
+        },
+        getUser: {
+            handler: "src/functions/get-user.handler",
+            events: [
+                {
+                    httpApi: {
+                        method: "GET",
+                        path: "/users/{userId}",
+                    },
+                },
+                {
+                    httpApi: {
+                        method: "GET",
+                        path: "/docs/get-user/{proxy+}",
+                    },
+                },
+            ],
+            iamRoleStatements: [
+                {
+                    Effect: "Allow",
+                    Action: ["dynamodb:GetItem"],
+                    Resource: { "Fn::GetAtt": ["UsersTable", "Arn"] },
+                },
+            ],
+        },
+        updateUser: {
+            handler: "src/functions/update-user.handler",
+            events: [
+                {
+                    httpApi: {
+                        method: "PUT",
+                        path: "/users/{userId}",
+                    },
+                },
+                {
+                    httpApi: {
+                        method: "GET",
+                        path: "/docs/update-user/{proxy+}",
+                    },
+                },
+            ],
+            iamRoleStatements: [
+                {
+                    Effect: "Allow",
+                    Action: ["dynamodb::PutItem", "dynamodb::GetItem"],
+                    Resource: { "Fn::GetAtt": ["UsersTable", "Arn"] },
+                },
+            ],
+        },
+        deleteUser: {
+            handler: "src/functions/delete-user.handler",
+            events: [
+                {
+                    httpApi: {
+                        method: "DELETE",
+                        path: "/users/{userId}",
+                    },
+                },
+                {
+                    httpApi: {
+                        method: "GET",
+                        path: "/docs/delete-user/{proxy+}",
+                    },
+                },
+            ],
+            iamRoleStatements: [
+                {
+                    Effect: "Allow",
+                    Action: ["dynamodb::DeleteItem", "dynamodb::GetItem"],
+                    Resource: { "Fn::GetAtt": ["UsersTable", "Arn"] },
                 },
             ],
         },

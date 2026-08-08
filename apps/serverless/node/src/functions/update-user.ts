@@ -1,14 +1,42 @@
-import type { AppEnvironment } from "@/index";
 import { GetCommand, PutCommand, TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
+import { swaggerUI } from "@hono/swagger-ui";
 import { Hono } from "hono";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { describeRoute, openAPIRouteHandler, resolver, validator } from "hono-openapi";
 import { env } from "hono/adapter";
+import { handle } from "hono/aws-lambda";
+import { cors } from "hono/cors";
+import { dynamoDBClient } from "@/lib/client";
+import { consola } from "@/lib/logger";
 import { ErrorSchema, UpdateUserSchema } from "@/models";
 
-const router = new Hono<AppEnvironment>();
+const app = new Hono();
+const { docClient } = dynamoDBClient();
 
-router.put(
-    "/:userId",
+app.use("/*", cors());
+
+app.get(
+    "/docs/update-user/openapi",
+    openAPIRouteHandler(app, {
+        documentation: {
+            info: {
+                title: "Update User",
+                version: "1.0.0",
+                description: "Update an existing user record",
+            },
+            servers: [
+                {
+                    url: "http://localhost:3000/",
+                    description: "Local Server",
+                },
+            ],
+        },
+    }),
+);
+
+app.get("/docs/update-user/swagger", swaggerUI({ url: "/docs/update-user/openapi" }));
+
+app.put(
+    "/users/:userId",
     describeRoute({
         description:
             "update an existing user record. If a new id is provided and differs from the path parameter, the record is relocated (old deleted, new created via transaction)",
@@ -34,8 +62,6 @@ router.put(
     validator("json", UpdateUserSchema),
     async (context) => {
         const { USERS_TABLE } = env<{ USERS_TABLE: string | undefined }>(context);
-        const { docClient } = context.var.container.get("client");
-        const logger = context.var.container.get("logger");
 
         const updateId = context.req.param("userId");
         const body = await context.req.json();
@@ -65,7 +91,7 @@ router.put(
 
                 return context.body(null, 204);
             } catch (error) {
-                logger.error(error);
+                consola.error(error);
 
                 return context.json({ error: "internal server error" }, 500);
             }
@@ -92,7 +118,7 @@ router.put(
                 );
             }
         } catch (error) {
-            logger.error(error);
+            consola.error(error);
 
             return context.json(
                 {
@@ -134,7 +160,7 @@ router.put(
 
             return context.body(null, 204);
         } catch (error) {
-            logger.error(error);
+            consola.error(error);
 
             context.status(500);
             return context.json({
@@ -144,4 +170,4 @@ router.put(
     },
 );
 
-export { router };
+export const handler = handle(app);

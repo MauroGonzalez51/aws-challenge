@@ -1,14 +1,42 @@
-import type { AppEnvironment } from "@/index";
 import { GetCommand } from "@aws-sdk/lib-dynamodb";
+import { swaggerUI } from "@hono/swagger-ui";
 import { Hono } from "hono";
-import { describeRoute, resolver } from "hono-openapi";
+import { describeRoute, openAPIRouteHandler, resolver } from "hono-openapi";
 import { env } from "hono/adapter";
+import { handle } from "hono/aws-lambda";
+import { cors } from "hono/cors";
+import { dynamoDBClient } from "@/lib/client";
+import { consola } from "@/lib/logger";
 import { ErrorSchema, UserSchema } from "@/models";
 
-const router = new Hono<AppEnvironment>();
+const app = new Hono();
+const { docClient } = dynamoDBClient();
 
-router.get(
-    "/:userId",
+app.use("/*", cors());
+
+app.get(
+    "/docs/get-user/openapi",
+    openAPIRouteHandler(app, {
+        documentation: {
+            info: {
+                title: "Get User",
+                version: "1.0.0",
+                description: "Get User information based on userId",
+            },
+            servers: [
+                {
+                    url: "http://localhost:3000/",
+                    description: "Local Server",
+                },
+            ],
+        },
+    }),
+);
+
+app.get("/docs/get-user/swagger", swaggerUI({ url: "/docs/get-user/openapi" }));
+
+app.get(
+    "/users/:userId",
     describeRoute({
         description: "retrieve information based on userId",
         responses: {
@@ -41,8 +69,6 @@ router.get(
     }),
     async (context) => {
         const { USERS_TABLE } = env<{ USERS_TABLE: string | undefined }>(context);
-        const { docClient } = context.var.container.get("client");
-        const logger = context.var.container.get("logger");
 
         const userId = context.req.param("userId");
 
@@ -68,7 +94,7 @@ router.get(
                 return context.json({ error: "validation errors", data: record.error.issues });
             }
         } catch (error) {
-            logger.error(error);
+            consola.error(error);
 
             context.status(500);
             return context.json({ error: `could not find user with provided 'userId': ${userId}` });
@@ -76,4 +102,4 @@ router.get(
     },
 );
 
-export { router };
+export const handler = handle(app);
