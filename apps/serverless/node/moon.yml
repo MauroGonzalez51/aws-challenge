@@ -37,3 +37,9 @@ tasks:
         options:
             cache: false
             runFromWorkspaceRoot: false
+
+    stop:
+        script: scripts/stop
+        options:
+            cache: false
+            runFromWorkspaceRoot: false

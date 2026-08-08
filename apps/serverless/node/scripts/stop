@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+CONTAINER_NAME="dynamodb-local"
+
+docker rm -f "$CONTAINER_NAME" 2>/dev/null
+
+echo "[ OK ] DynamoDB Local removed"

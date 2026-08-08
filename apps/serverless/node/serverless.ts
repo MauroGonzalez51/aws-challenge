@@ -1,3 +1,14 @@
+import type {
+    GlobalSecondaryIndex,
+    KeySchemaElement,
+    AttributeDefinition,
+} from "@aws-sdk/client-dynamodb";
+import {
+    ProjectionType,
+    KeyType,
+    ScalarAttributeType,
+    BillingMode,
+} from "@aws-sdk/client-dynamodb";
 import { AWS } from "@serverless/typescript";
 
 export default {
@@ -57,17 +68,35 @@ export default {
                 Properties: {
                     AttributeDefinitions: [
                         {
-                            AttributeName: "userId",
-                            AttributeType: "S",
+                            AttributeName: "id",
+                            AttributeType: ScalarAttributeType.S,
                         },
-                    ],
+                        {
+                            AttributeName: "email",
+                            AttributeType: ScalarAttributeType.S,
+                        },
+                    ] satisfies AttributeDefinition[],
                     KeySchema: [
                         {
-                            AttributeName: "userId",
-                            KeyType: "HASH",
+                            AttributeName: "id",
+                            KeyType: KeyType.HASH,
                         },
-                    ],
-                    BillingMode: "PAY_PER_REQUEST",
+                    ] satisfies KeySchemaElement[],
+                    GlobalSecondaryIndexes: [
+                        {
+                            IndexName: "email-index",
+                            KeySchema: [
+                                {
+                                    AttributeName: "email",
+                                    KeyType: KeyType.HASH,
+                                },
+                            ],
+                            Projection: {
+                                ProjectionType: ProjectionType.ALL,
+                            },
+                        },
+                    ] satisfies GlobalSecondaryIndex[],
+                    BillingMode: BillingMode.PAY_PER_REQUEST,
                     TableName: "${param:tableName}",
                 },
             },
