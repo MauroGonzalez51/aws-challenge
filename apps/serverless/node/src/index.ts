@@ -1,67 +1,71 @@
 import process from "node:process";
 import { dynamoDBClient } from "@/lib/client";
 import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
-import express from "express";
-import serverless from "serverless-http";
+import { Hono } from "hono";
+import { consola } from "@/lib/logger";
+import { UserSchema, CreateUserSchema } from "@/models/user";
+import { handle } from "hono/aws-lambda";
 
-const app = express();
+const app = new Hono();
 
 const USERS_TABLE = process.env.USERS_TABLE;
 const { docClient } = dynamoDBClient();
 
-app.use(express.json());
-
-app.get("/users/:userId", async (req, res) => {
-    const params = {
-        TableName: USERS_TABLE,
-        Key: {
-            userId: req.params.userId,
-        },
-    };
+app.get("/users/:userId", async (context) => {
+    const userId = context.req.param("userId");
 
     try {
-        const command = new GetCommand(params);
+        const command = new GetCommand({ TableName: USERS_TABLE, Key: { userId } });
         const { Item } = await docClient.send(command);
-        if (Item) {
-            const { userId, name } = Item;
-            res.json({ userId, name });
-        } else {
-            res.status(404).json({ error: 'Could not find user with provided "userId"' });
+
+        if (!Item) {
+            context.status(404);
+            return context.json({ error: `could not find user with provided 'userId': ${userId}` });
+        }
+
+        const record = UserSchema.safeParse(Item);
+
+        if (record.success) {
+            return context.json(record.data);
+        }
+
+        if (record.error.issues.length > 0) {
+            context.status(400);
+            return context.json({ error: "validation errors", data: record.error.issues });
         }
     } catch (error) {
-        console.log(error);
-        res.status(500).json({ error: "Could not retrieve user" });
+        consola.error(error);
+
+        context.status(500);
+        return context.json({ error: `could not find user with provided 'userId': ${userId}` });
     }
 });
 
-app.post("/users", async (req, res) => {
-    const { userId, name } = req.body;
-    console.warn(USERS_TABLE);
-    if (typeof userId !== "string") {
-        res.status(400).json({ error: '"userId" must be a string' });
-    } else if (typeof name !== "string") {
-        res.status(400).json({ error: '"name" must be a string' });
+app.post("/users", async (context) => {
+    const body = await context.req.json();
+    const payload = CreateUserSchema.safeParse(body);
+
+    if (!payload.success) {
+        context.status(400);
+        return context.json({ error: "validation errors", data: payload.error.issues });
     }
 
-    const params = {
-        TableName: USERS_TABLE,
-        Item: { userId, name },
-    };
+    const { userId, name } = payload.data;
 
     try {
-        const command = new PutCommand(params);
+        const command = new PutCommand({ TableName: USERS_TABLE, Item: { userId, name } });
         await docClient.send(command);
-        res.json({ userId, name });
+        return context.json({ userId, name });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Could not create user" });
+        consola.error(error);
+
+        context.status(500);
+        return context.json({ error: "could not create user" });
     }
 });
 
-app.use((req, res, next) => {
-    return res.status(404).json({
-        error: "Not Found",
-    });
+app.notFound((context) => {
+    return context.json({ error: "not found" });
 });
 
-exports.handler = serverless(app);
+export const handler = handle(app);

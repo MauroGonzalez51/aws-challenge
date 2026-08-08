@@ -3,8 +3,11 @@
     "dependencies": {
         "@aws-sdk/client-dynamodb": "^3.585.0",
         "@aws-sdk/lib-dynamodb": "^3.585.0",
-        "express": "^5.2.1",
-        "serverless-http": "^4.0.0"
+        "@serverless/typescript": "^4.30.0",
+        "consola": "^3.4.2",
+        "hono": "^4.13.0",
+        "serverless-http": "^4.0.0",
+        "zod": "^4.4.3"
     },
     "devDependencies": {
         "@aws-challenge/tools-eslint": "workspace:*",
