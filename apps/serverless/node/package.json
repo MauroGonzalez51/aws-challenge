@@ -8,6 +8,7 @@
     },
     "devDependencies": {
         "@aws-challenge/tools-eslint": "workspace:*",
+        "@types/node": "^26.1.2",
         "serverless-offline": "^14.7.4"
     }
 }

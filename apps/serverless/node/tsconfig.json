@@ -1,0 +1,6 @@
+{
+    "extends": "@aws-challenge/tools-tsconfig/tsconfig.json",
+    "compilerOptions": {
+        "types": ["node"]
+    }
+}

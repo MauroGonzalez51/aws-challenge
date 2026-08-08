@@ -1,15 +1,33 @@
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-
-const { DynamoDBDocumentClient, GetCommand, PutCommand } = require("@aws-sdk/lib-dynamodb");
+import process from "node:process";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 
 const express = require("express");
 const serverless = require("serverless-http");
 
 const app = express();
 
+function dynamoDBClient() {
+    console.warn(`offline: ${process.env.IS_OFFLINE}`);
+
+    if (process.env.IS_OFFLINE) {
+        const client = new DynamoDBClient({
+            endpoint: "http://localhost:8000",
+        });
+
+        const docClient = DynamoDBDocumentClient.from(client);
+
+        return { client, docClient };
+    }
+
+    const client = new DynamoDBClient();
+    const docClient = DynamoDBDocumentClient.from(client);
+
+    return { client, docClient };
+}
+
 const USERS_TABLE = process.env.USERS_TABLE;
-const client = new DynamoDBClient();
-const docClient = DynamoDBDocumentClient.from(client);
+const { docClient } = dynamoDBClient();
 
 app.use(express.json());
 
@@ -38,6 +56,7 @@ app.get("/users/:userId", async (req, res) => {
 
 app.post("/users", async (req, res) => {
     const { userId, name } = req.body;
+    console.warn(USERS_TABLE);
     if (typeof userId !== "string") {
         res.status(400).json({ error: '"userId" must be a string' });
     } else if (typeof name !== "string") {

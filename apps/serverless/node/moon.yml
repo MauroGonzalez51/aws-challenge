@@ -14,8 +14,26 @@ tasks:
             cache: false
             runFromWorkspaceRoot: true
 
-    serverless:
-        command: serverless
+    sls:
+        command: sls
         preset: server
         options:
             cache: false
+
+    offline:
+        command: sls
+        args:
+            - offline
+            - --stage
+            - dev
+        deps:
+            - ~:prepare
+        preset: server
+        options:
+            cache: false
+
+    prepare:
+        script: scripts/prepare
+        options:
+            cache: false
+            runFromWorkspaceRoot: false
