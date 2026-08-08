@@ -1,0 +1,13 @@
+{
+    "name": "@aws-challenge/apps-serverless-node",
+    "dependencies": {
+        "@aws-sdk/client-dynamodb": "^3.585.0",
+        "@aws-sdk/lib-dynamodb": "^3.585.0",
+        "express": "^5.2.1",
+        "serverless-http": "^4.0.0"
+    },
+    "devDependencies": {
+        "@aws-challenge/tools-eslint": "workspace:*",
+        "serverless-offline": "^14.7.4"
+    }
+}
