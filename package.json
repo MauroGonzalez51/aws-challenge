@@ -2,11 +2,9 @@
     "name": "aws-challenge",
     "version": "1.0.0",
     "license": "ISC",
-    "dependencies": {
-        "@antfu/eslint-config": "^9.3.0",
-        "eslint": "^10.8.0"
-    },
     "devDependencies": {
+        "@aws-challenge/tools-eslint": "workspace:*",
+        "eslint": "^10.8.0",
         "prettier": "^3.9.6"
     }
 }

@@ -1,3 +1,3 @@
-import { antfu } from "@antfu/eslint-config";
+import { withConfig } from "@aws-challenge/tools-eslint";
 
-export default antfu({ stylistic: { indent: 4, semi: true, quotes: "double" } });
+export default withConfig();

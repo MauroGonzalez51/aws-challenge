@@ -16,6 +16,14 @@
             "path": "../packages/iac",
             "name": "[ PACKAGES ] IAC",
         },
+        {
+            "path": "../tools/eslint",
+            "name": "[ TOOL ]  ESLint",
+        },
+        {
+            "path": "../tools/tsconfig",
+            "name": "[ TOOL ] TS-Config",
+        },
     ],
     "settings": {
         "java.compile.nullAnalysis.mode": "automatic",

@@ -1,0 +1,8 @@
+{
+    "extends": "@aws-challenge/tools-tsconfig/tsconfig.json",
+    "compilerOptions": {
+        "module": "nodenext",
+        "moduleResolution": "nodenext",
+        "ignoreDeprecations": "6.0"
+    }
+}
