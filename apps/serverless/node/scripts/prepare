@@ -6,7 +6,7 @@ docker ps --format '{{.Names}}' | grep -q '^dynamodb-local$' \
     || docker run -d --name dynamodb-local -p 8000:8000 amazon/dynamodb-local
 
 # Wait for it to be ready
-until aws dynamodb list-tables --endpoint-url http://localhost:8000 --no-cli-pager >/dev/null 2>&1; do
+until curl -s http://localhost:8000 >/dev/null 2>&1; do
     sleep 0.5
 done
 

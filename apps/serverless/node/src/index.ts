@@ -1,30 +1,10 @@
 import process from "node:process";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
-
-const express = require("express");
-const serverless = require("serverless-http");
+import { dynamoDBClient } from "@/lib/client";
+import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import express from "express";
+import serverless from "serverless-http";
 
 const app = express();
-
-function dynamoDBClient() {
-    console.warn(`offline: ${process.env.IS_OFFLINE}`);
-
-    if (process.env.IS_OFFLINE) {
-        const client = new DynamoDBClient({
-            endpoint: "http://localhost:8000",
-        });
-
-        const docClient = DynamoDBDocumentClient.from(client);
-
-        return { client, docClient };
-    }
-
-    const client = new DynamoDBClient();
-    const docClient = DynamoDBDocumentClient.from(client);
-
-    return { client, docClient };
-}
 
 const USERS_TABLE = process.env.USERS_TABLE;
 const { docClient } = dynamoDBClient();

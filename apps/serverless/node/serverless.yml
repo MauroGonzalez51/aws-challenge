@@ -48,15 +48,5 @@ resources:
                 BillingMode: PAY_PER_REQUEST
                 TableName: ${param:tableName}
 
-custom:
-    dynamodb:
-        stages:
-            - dev
-        start:
-            docker: true
-            migrate: true
-            port: 8000
-            inMemory: true
-
 plugins:
     - serverless-offline
