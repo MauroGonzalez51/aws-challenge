@@ -1,12 +1,12 @@
 import type { InferdiHonoEnv } from "@inferdi/hono";
-import { Hono } from "hono";
-import { handle } from "hono/aws-lambda";
-import { router } from "@/routes/user";
-import { openAPIRouteHandler } from "hono-openapi";
-import { cors } from "hono/cors";
 import { swaggerUI } from "@hono/swagger-ui";
 import { inferdiHono } from "@inferdi/hono";
+import { Hono } from "hono";
+import { openAPIRouteHandler } from "hono-openapi";
+import { handle } from "hono/aws-lambda";
+import { cors } from "hono/cors";
 import { buildRootContainer } from "@/container";
+import { userRouter } from "@/routes/user";
 
 const root = buildRootContainer();
 
@@ -17,6 +17,7 @@ app.use(
     "*",
     inferdiHono({
         container: root,
+        key: "container",
         setupScope(scope, _) {
             const request = scope.get("request");
             request.requestId = crypto.randomUUID();
@@ -47,7 +48,7 @@ app.get(
 
 app.get("/docs/swagger", swaggerUI({ url: "/docs/openapi" }));
 
-app.route("/users", router);
+app.route("/users", userRouter);
 
 app.notFound((context) => {
     return context.json({ error: "not found" });

@@ -1,15 +1,16 @@
+/* eslint-disable no-template-curly-in-string */
 import type {
+    AttributeDefinition,
     GlobalSecondaryIndex,
     KeySchemaElement,
-    AttributeDefinition,
 } from "@aws-sdk/client-dynamodb";
+import type { AWS } from "@serverless/typescript";
 import {
-    ProjectionType,
-    KeyType,
-    ScalarAttributeType,
     BillingMode,
+    KeyType,
+    ProjectionType,
+    ScalarAttributeType,
 } from "@aws-sdk/client-dynamodb";
-import { AWS } from "@serverless/typescript";
 
 export default {
     org: "maurogonzalez51",

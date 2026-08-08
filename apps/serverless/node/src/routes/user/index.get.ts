@@ -1,11 +1,9 @@
 import type { AppEnvironment } from "@/index";
+import { GetCommand } from "@aws-sdk/lib-dynamodb";
 import { Hono } from "hono";
-import { UserSchema, CreateUserSchema } from "@/models/user";
-import { ErrorSchema } from "@/models/error";
-import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
-import { consola } from "@/lib/logger";
+import { describeRoute, resolver } from "hono-openapi";
 import { env } from "hono/adapter";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { ErrorSchema, UserSchema } from "@/models";
 
 const router = new Hono<AppEnvironment>();
 
@@ -44,11 +42,12 @@ router.get(
     async (context) => {
         const { USERS_TABLE } = env<{ USERS_TABLE: string | undefined }>(context);
         const { docClient } = context.var.container.get("client");
+        const logger = context.var.container.get("logger");
 
         const userId = context.req.param("userId");
 
         try {
-            const command = new GetCommand({ TableName: USERS_TABLE, Key: { userId } });
+            const command = new GetCommand({ TableName: USERS_TABLE, Key: { id: userId } });
             const { Item } = await docClient.send(command);
 
             if (!Item) {
@@ -69,66 +68,10 @@ router.get(
                 return context.json({ error: "validation errors", data: record.error.issues });
             }
         } catch (error) {
-            consola.error(error);
+            logger.error(error);
 
             context.status(500);
             return context.json({ error: `could not find user with provided 'userId': ${userId}` });
-        }
-    },
-);
-
-router.post(
-    "/",
-    describeRoute({
-        description: "create a new user record",
-        responses: {
-            201: {
-                description: "user created succesfully",
-                content: {
-                    "application/json": { schema: resolver(UserSchema) },
-                },
-            },
-            400: {
-                description: "validation errors",
-                content: {
-                    "application/json": { schema: resolver(ErrorSchema) },
-                },
-            },
-            500: {
-                description: "internal server error",
-                content: {
-                    "application/json": { schema: resolver(ErrorSchema) },
-                },
-            },
-        },
-        tags: ["user"],
-    }),
-    validator("json", CreateUserSchema),
-    async (context) => {
-        const { USERS_TABLE } = env<{ USERS_TABLE: string | undefined }>(context);
-        const { docClient } = context.var.container.get("client");
-
-        const body = await context.req.json();
-        const payload = CreateUserSchema.safeParse(body);
-
-        if (!payload.success) {
-            context.status(400);
-            return context.json({ error: "validation errors", data: payload.error.issues });
-        }
-
-        const { userId, name } = payload.data;
-
-        try {
-            const command = new PutCommand({ TableName: USERS_TABLE, Item: { userId, name } });
-            await docClient.send(command);
-
-            context.status(201);
-            return context.json({ userId, name });
-        } catch (error) {
-            consola.error(error);
-
-            context.status(500);
-            return context.json({ error: "could not create user" });
         }
     },
 );

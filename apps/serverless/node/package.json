@@ -18,6 +18,7 @@
         "@aws-challenge/tools-eslint": "workspace:*",
         "@types/node": "^26.1.2",
         "eslint": "^10.8.0",
-        "serverless-offline": "^14.7.4"
+        "serverless-offline": "^14.7.4",
+        "typescript": "6.0.3"
     }
 }
