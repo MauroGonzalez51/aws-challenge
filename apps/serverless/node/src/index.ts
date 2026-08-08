@@ -1,11 +1,28 @@
+import type { InferdiHonoEnv } from "@inferdi/hono";
 import { Hono } from "hono";
 import { handle } from "hono/aws-lambda";
 import { router } from "@/routes/user";
 import { openAPIRouteHandler } from "hono-openapi";
 import { cors } from "hono/cors";
 import { swaggerUI } from "@hono/swagger-ui";
+import { inferdiHono } from "@inferdi/hono";
+import { buildRootContainer } from "@/container";
 
-const app = new Hono();
+const root = buildRootContainer();
+
+export type AppEnvironment = InferdiHonoEnv<typeof root, "container">;
+const app = new Hono<AppEnvironment>();
+
+app.use(
+    "*",
+    inferdiHono({
+        container: root,
+        setupScope(scope, _) {
+            const request = scope.get("request");
+            request.requestId = crypto.randomUUID();
+        },
+    }),
+);
 
 app.use("/*", cors());
 

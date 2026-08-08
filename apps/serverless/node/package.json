@@ -5,6 +5,8 @@
         "@aws-sdk/lib-dynamodb": "^3.585.0",
         "@hono/standard-validator": "^0.4.0",
         "@hono/swagger-ui": "^0.6.1",
+        "@inferdi/hono": "^5.0.7",
+        "@inferdi/inferdi": "^5.0.7",
         "@serverless/typescript": "^4.30.0",
         "consola": "^3.4.2",
         "hono": "^4.13.0",

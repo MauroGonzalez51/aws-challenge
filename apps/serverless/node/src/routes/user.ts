@@ -1,14 +1,13 @@
+import type { AppEnvironment } from "@/index";
 import { Hono } from "hono";
 import { UserSchema, CreateUserSchema } from "@/models/user";
 import { ErrorSchema } from "@/models/error";
 import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
-import { dynamoDBClient } from "@/lib/client";
 import { consola } from "@/lib/logger";
 import { env } from "hono/adapter";
-import { describeRoute, resolver } from "hono-openapi";
+import { describeRoute, resolver, validator } from "hono-openapi";
 
-const router = new Hono();
-const { docClient } = dynamoDBClient();
+const router = new Hono<AppEnvironment>();
 
 router.get(
     "/:userId",
@@ -44,6 +43,7 @@ router.get(
     }),
     async (context) => {
         const { USERS_TABLE } = env<{ USERS_TABLE: string | undefined }>(context);
+        const { docClient } = context.var.container.get("client");
 
         const userId = context.req.param("userId");
 
@@ -103,8 +103,10 @@ router.post(
         },
         tags: ["user"],
     }),
+    validator("json", CreateUserSchema),
     async (context) => {
         const { USERS_TABLE } = env<{ USERS_TABLE: string | undefined }>(context);
+        const { docClient } = context.var.container.get("client");
 
         const body = await context.req.json();
         const payload = CreateUserSchema.safeParse(body);
