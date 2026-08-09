@@ -1,0 +1,7 @@
+{
+    "extends": "@aws-challenge/tools-tsconfig/tsconfig.json",
+    "compilerOptions": {
+        "moduleResolution": "bundler",
+        "types": ["node"]
+    }
+}

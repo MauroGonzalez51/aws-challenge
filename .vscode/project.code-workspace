@@ -13,6 +13,10 @@
             "name": "[ APP ] Serverless-Node",
         },
         {
+            "path": "../apps/serverless/java",
+            "name": "[ APP ] Serverless-Java",
+        },
+        {
             "path": "../packages/iac",
             "name": "[ PACKAGES ] IAC",
         },

@@ -1,30 +1,19 @@
 /* eslint-disable no-template-curly-in-string */
-import type {
-    AttributeDefinition,
-    GlobalSecondaryIndex,
-    KeySchemaElement,
-} from "@aws-sdk/client-dynamodb";
 import type { AWS } from "@serverless/typescript";
-import {
-    BillingMode,
-    KeyType,
-    ProjectionType,
-    ScalarAttributeType,
-} from "@aws-sdk/client-dynamodb";
 
 export default {
     org: "maurogonzalez51",
-    service: "aws-challenge-serverless-node",
+    service: "aws-challenge-serverless-java",
     stages: {
         default: {
             params: {
-                tableName: "users-table-${sls:stage}",
+                tableName: "users-table-java-${sls:stage}",
             },
         },
     },
     provider: {
         name: "aws",
-        runtime: "nodejs24.x",
+        runtime: "java21",
         architecture: "arm64",
         iam: {
             role: {
@@ -44,7 +33,7 @@ export default {
     },
     functions: {
         createUser: {
-            handler: "src/functions/create-user.handler",
+            handler: "com.pragma.handlers.CreateUserHandler",
             environment: {
                 SQS_QUEUE_URL: { Ref: "UserCreatedQueue" },
             },
@@ -53,12 +42,6 @@ export default {
                     httpApi: {
                         method: "POST",
                         path: "/users",
-                    },
-                },
-                {
-                    httpApi: {
-                        method: "GET",
-                        path: "/docs/create-user/{proxy+}",
                     },
                 },
             ],
@@ -80,18 +63,12 @@ export default {
             },
         },
         getUser: {
-            handler: "src/functions/get-user.handler",
+            handler: "com.pragma.handlers.GetUserHandler",
             events: [
                 {
                     httpApi: {
                         method: "GET",
                         path: "/users/{userId}",
-                    },
-                },
-                {
-                    httpApi: {
-                        method: "GET",
-                        path: "/docs/get-user/{proxy+}",
                     },
                 },
             ],
@@ -108,18 +85,12 @@ export default {
             },
         },
         updateUser: {
-            handler: "src/functions/update-user.handler",
+            handler: "com.pragma.handlers.UpdateUserHandler",
             events: [
                 {
                     httpApi: {
                         method: "PUT",
                         path: "/users/{userId}",
-                    },
-                },
-                {
-                    httpApi: {
-                        method: "GET",
-                        path: "/docs/update-user/{proxy+}",
                     },
                 },
             ],
@@ -128,7 +99,7 @@ export default {
                     statements: [
                         {
                             Effect: "Allow",
-                            Action: ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:DeleteItem"],
+                            Action: ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:DeleteItem", "dynamodb:ConditionCheckItem"],
                             Resource: { "Fn::GetAtt": ["UsersTable", "Arn"] },
                         },
                     ],
@@ -136,18 +107,12 @@ export default {
             },
         },
         deleteUser: {
-            handler: "src/functions/delete-user.handler",
+            handler: "com.pragma.handlers.DeleteUserHandler",
             events: [
                 {
                     httpApi: {
                         method: "DELETE",
                         path: "/users/{userId}",
-                    },
-                },
-                {
-                    httpApi: {
-                        method: "GET",
-                        path: "/docs/delete-user/{proxy+}",
                     },
                 },
             ],
@@ -164,7 +129,7 @@ export default {
             },
         },
         sendEmail: {
-            handler: "src/functions/send-email.handler",
+            handler: "com.pragma.handlers.SendEmailHandler",
             events: [
                 {
                     sqs: {
@@ -184,41 +149,41 @@ export default {
                     AttributeDefinitions: [
                         {
                             AttributeName: "id",
-                            AttributeType: ScalarAttributeType.S,
+                            AttributeType: "S",
                         },
                         {
                             AttributeName: "email",
-                            AttributeType: ScalarAttributeType.S,
+                            AttributeType: "S",
                         },
-                    ] satisfies AttributeDefinition[],
+                    ],
                     KeySchema: [
                         {
                             AttributeName: "id",
-                            KeyType: KeyType.HASH,
+                            KeyType: "HASH",
                         },
-                    ] satisfies KeySchemaElement[],
+                    ],
                     GlobalSecondaryIndexes: [
                         {
                             IndexName: "email-index",
                             KeySchema: [
                                 {
                                     AttributeName: "email",
-                                    KeyType: KeyType.HASH,
+                                    KeyType: "HASH",
                                 },
                             ],
                             Projection: {
-                                ProjectionType: ProjectionType.ALL,
+                                ProjectionType: "ALL",
                             },
                         },
-                    ] satisfies GlobalSecondaryIndex[],
-                    BillingMode: BillingMode.PAY_PER_REQUEST,
+                    ],
+                    BillingMode: "PAY_PER_REQUEST",
                     TableName: "${param:tableName}",
                 },
             },
             UserCreatedQueue: {
                 Type: "AWS::SQS::Queue",
                 Properties: {
-                    QueueName: "user-created-queue-${sls:stage}",
+                    QueueName: "user-created-queue-java-${sls:stage}",
                 },
             },
             UserCreatedQueuePolicy: {
@@ -231,7 +196,10 @@ export default {
                                 Effect: "Allow",
                                 Principal: {
                                     AWS: {
-                                        "Fn::GetAtt": ["CreateUserIamRoleLambdaExecution", "Arn"],
+                                        "Fn::GetAtt": [
+                                            "CreateUserIamRoleLambdaExecution",
+                                            "Arn",
+                                        ],
                                     },
                                 },
                                 Action: "sqs:SendMessage",
@@ -241,7 +209,10 @@ export default {
                                 Effect: "Allow",
                                 Principal: {
                                     AWS: {
-                                        "Fn::GetAtt": ["SendEmailIamRoleLambdaExecution", "Arn"],
+                                        "Fn::GetAtt": [
+                                            "SendEmailIamRoleLambdaExecution",
+                                            "Arn",
+                                        ],
                                     },
                                 },
                                 Action: [
@@ -258,11 +229,13 @@ export default {
             UserNotificationTopic: {
                 Type: "AWS::SNS::Topic",
                 Properties: {
-                    TopicName: "user-notification-topic-${sls:stage}",
+                    TopicName: "user-notification-topic-java-${sls:stage}",
                 },
             },
         },
     },
-    build: { esbuild: { bundle: true, minify: true } },
+    package: {
+        artifact: "build/libs/serverless-java-all.jar",
+    },
     plugins: ["serverless-offline"],
 } satisfies AWS;

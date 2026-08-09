@@ -1,0 +1,51 @@
+project:
+    title: api
+    description: serverless app with java and dynamodb
+
+id: serverless-java
+
+tasks:
+    pnpm:
+        command: pnpm
+        args:
+            - --filter
+            - "@aws-challenge/apps-serverless-java"
+        options:
+            cache: false
+            runFromWorkspaceRoot: true
+
+    sls:
+        command: sls
+        preset: server
+        options:
+            cache: false
+
+    offline:
+        command: sls
+        args:
+            - offline
+            - --stage
+            - dev
+        deps:
+            - ~:prepare
+        preset: server
+        options:
+            cache: false
+
+    prepare:
+        script: scripts/prepare
+        options:
+            cache: false
+            runFromWorkspaceRoot: false
+
+    stop:
+        script: scripts/stop
+        options:
+            cache: false
+            runFromWorkspaceRoot: false
+
+    gradle:
+        script: gradle
+        options:
+            cache: false
+            runFromWorkspaceRoot: false

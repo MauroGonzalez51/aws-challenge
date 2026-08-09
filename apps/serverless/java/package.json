@@ -1,0 +1,9 @@
+{
+    "name": "@aws-challenge/apps-serverless-java",
+    "dependencies": {
+        "@serverless/typescript": "^4.30.0"
+    },
+    "devDependencies": {
+        "serverless-offline": "^14.7.4"
+    }
+}
