@@ -1,0 +1,500 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "IAC for Users CRUD - API Gateway, Lambdas, DynamoDB, SQS, SNS"
+
+Parameters:
+    Stage:
+        Type: String
+        Default: dev
+
+    ArtifactBucket:
+        Type: String
+        Description: S3 bucket where Lambda artifacts are stored
+
+    ArtifactKey:
+        Type: String
+        Description: S3 key for the Lambda deployment package (zip or jar)
+
+    Runtime:
+        Type: String
+        Default: java21
+        AllowedValues:
+            - java21
+            - nodejs24.x
+
+    CreateUserHandler:
+        Type: String
+        Default: com.pragma.handlers.CreateUserHandler
+
+    GetUserHandler:
+        Type: String
+        Default: com.pragma.handlers.GetUserHandler
+
+    UpdateUserHandler:
+        Type: String
+        Default: com.pragma.handlers.UpdateUserHandler
+
+    DeleteUserHandler:
+        Type: String
+        Default: com.pragma.handlers.DeleteUserHandler
+
+    SendEmailHandler:
+        Type: String
+        Default: com.pragma.handlers.SendEmailHandler
+
+Resources:
+    # ============================================================
+    # DynamoDB
+    # ============================================================
+    UsersTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: !Sub "users-table-${Stage}"
+            BillingMode: PAY_PER_REQUEST
+            AttributeDefinitions:
+                - AttributeName: id
+                  AttributeType: S
+                - AttributeName: email
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: id
+                  KeyType: HASH
+            GlobalSecondaryIndexes:
+                - IndexName: email-index
+                  KeySchema:
+                      - AttributeName: email
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+
+    # ============================================================
+    # SQS
+    # ============================================================
+    UserCreatedQueue:
+        Type: AWS::SQS::Queue
+        Properties:
+            QueueName: !Sub "user-created-queue-${Stage}"
+
+    UserCreatedQueuePolicy:
+        Type: AWS::SQS::QueuePolicy
+        Properties:
+            Queues:
+                - !Ref UserCreatedQueue
+            PolicyDocument:
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                          AWS: !GetAtt CreateUserRole.Arn
+                      Action: sqs:SendMessage
+                      Resource: !GetAtt UserCreatedQueue.Arn
+                    - Effect: Allow
+                      Principal:
+                          AWS: !GetAtt SendEmailRole.Arn
+                      Action:
+                          - sqs:ReceiveMessage
+                          - sqs:DeleteMessage
+                          - sqs:GetQueueAttributes
+                      Resource: !GetAtt UserCreatedQueue.Arn
+
+    # ============================================================
+    # SNS
+    # ============================================================
+    UserNotificationTopic:
+        Type: AWS::SNS::Topic
+        Properties:
+            TopicName: !Sub "user-notification-topic-${Stage}"
+
+    # ============================================================
+    # API Gateway (HTTP API)
+    # ============================================================
+    HttpApi:
+        Type: AWS::ApiGatewayV2::Api
+        Properties:
+            Name: !Sub "users-api-${Stage}"
+            ProtocolType: HTTP
+            CorsConfiguration:
+                AllowOrigins:
+                    - "*"
+                AllowMethods:
+                    - GET
+                    - POST
+                    - PUT
+                    - DELETE
+                    - OPTIONS
+                AllowHeaders:
+                    - Content-Type
+
+    HttpApiStage:
+        Type: AWS::ApiGatewayV2::Stage
+        Properties:
+            ApiId: !Ref HttpApi
+            StageName: "$default"
+            AutoDeploy: true
+
+    # ============================================================
+    # IAM Roles
+    # ============================================================
+    CreateUserRole:
+        Type: AWS::IAM::Role
+        Properties:
+            RoleName: !Sub "create-user-role-${Stage}"
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                          Service: lambda.amazonaws.com
+                      Action: sts:AssumeRole
+            Policies:
+                - PolicyName: CreateUserPolicy
+                  PolicyDocument:
+                      Version: "2012-10-17"
+                      Statement:
+                          - Effect: Allow
+                            Action:
+                                - logs:CreateLogGroup
+                                - logs:CreateLogStream
+                                - logs:PutLogEvents
+                            Resource: "*"
+                          - Effect: Allow
+                            Action:
+                                - dynamodb:PutItem
+                            Resource: !GetAtt UsersTable.Arn
+                          - Effect: Allow
+                            Action:
+                                - sqs:SendMessage
+                            Resource: !GetAtt UserCreatedQueue.Arn
+
+    GetUserRole:
+        Type: AWS::IAM::Role
+        Properties:
+            RoleName: !Sub "get-user-role-${Stage}"
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                          Service: lambda.amazonaws.com
+                      Action: sts:AssumeRole
+            Policies:
+                - PolicyName: GetUserPolicy
+                  PolicyDocument:
+                      Version: "2012-10-17"
+                      Statement:
+                          - Effect: Allow
+                            Action:
+                                - logs:CreateLogGroup
+                                - logs:CreateLogStream
+                                - logs:PutLogEvents
+                            Resource: "*"
+                          - Effect: Allow
+                            Action:
+                                - dynamodb:GetItem
+                            Resource: !GetAtt UsersTable.Arn
+
+    UpdateUserRole:
+        Type: AWS::IAM::Role
+        Properties:
+            RoleName: !Sub "update-user-role-${Stage}"
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                          Service: lambda.amazonaws.com
+                      Action: sts:AssumeRole
+            Policies:
+                - PolicyName: UpdateUserPolicy
+                  PolicyDocument:
+                      Version: "2012-10-17"
+                      Statement:
+                          - Effect: Allow
+                            Action:
+                                - logs:CreateLogGroup
+                                - logs:CreateLogStream
+                                - logs:PutLogEvents
+                            Resource: "*"
+                          - Effect: Allow
+                            Action:
+                                - dynamodb:PutItem
+                                - dynamodb:GetItem
+                                - dynamodb:DeleteItem
+                                - dynamodb:ConditionCheckItem
+                            Resource: !GetAtt UsersTable.Arn
+
+    DeleteUserRole:
+        Type: AWS::IAM::Role
+        Properties:
+            RoleName: !Sub "delete-user-role-${Stage}"
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                          Service: lambda.amazonaws.com
+                      Action: sts:AssumeRole
+            Policies:
+                - PolicyName: DeleteUserPolicy
+                  PolicyDocument:
+                      Version: "2012-10-17"
+                      Statement:
+                          - Effect: Allow
+                            Action:
+                                - logs:CreateLogGroup
+                                - logs:CreateLogStream
+                                - logs:PutLogEvents
+                            Resource: "*"
+                          - Effect: Allow
+                            Action:
+                                - dynamodb:DeleteItem
+                                - dynamodb:GetItem
+                            Resource: !GetAtt UsersTable.Arn
+
+    SendEmailRole:
+        Type: AWS::IAM::Role
+        Properties:
+            RoleName: !Sub "send-email-role-${Stage}"
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                          Service: lambda.amazonaws.com
+                      Action: sts:AssumeRole
+            Policies:
+                - PolicyName: SendEmailPolicy
+                  PolicyDocument:
+                      Version: "2012-10-17"
+                      Statement:
+                          - Effect: Allow
+                            Action:
+                                - logs:CreateLogGroup
+                                - logs:CreateLogStream
+                                - logs:PutLogEvents
+                            Resource: "*"
+                          - Effect: Allow
+                            Action:
+                                - sqs:ReceiveMessage
+                                - sqs:DeleteMessage
+                                - sqs:GetQueueAttributes
+                            Resource: !GetAtt UserCreatedQueue.Arn
+                          - Effect: Allow
+                            Action:
+                                - sns:Publish
+                            Resource: !GetAtt UserNotificationTopic.TopicArn
+
+    # ============================================================
+    # Lambda Functions
+    # ============================================================
+    CreateUserFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+            FunctionName: !Sub "create-user-${Stage}"
+            Runtime: !Ref Runtime
+            Handler: !Ref CreateUserHandler
+            Code:
+                S3Bucket: !Ref ArtifactBucket
+                S3Key: !Ref ArtifactKey
+            Role: !GetAtt CreateUserRole.Arn
+            Architectures:
+                - arm64
+            Timeout: 30
+            MemorySize: 512
+            Environment:
+                Variables:
+                    USERS_TABLE: !Ref UsersTable
+                    SQS_QUEUE_URL: !Ref UserCreatedQueue
+
+    GetUserFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+            FunctionName: !Sub "get-user-${Stage}"
+            Runtime: !Ref Runtime
+            Handler: !Ref GetUserHandler
+            Code:
+                S3Bucket: !Ref ArtifactBucket
+                S3Key: !Ref ArtifactKey
+            Role: !GetAtt GetUserRole.Arn
+            Architectures:
+                - arm64
+            Timeout: 30
+            MemorySize: 512
+            Environment:
+                Variables:
+                    USERS_TABLE: !Ref UsersTable
+
+    UpdateUserFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+            FunctionName: !Sub "update-user-${Stage}"
+            Runtime: !Ref Runtime
+            Handler: !Ref UpdateUserHandler
+            Code:
+                S3Bucket: !Ref ArtifactBucket
+                S3Key: !Ref ArtifactKey
+            Role: !GetAtt UpdateUserRole.Arn
+            Architectures:
+                - arm64
+            Timeout: 30
+            MemorySize: 512
+            Environment:
+                Variables:
+                    USERS_TABLE: !Ref UsersTable
+
+    DeleteUserFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+            FunctionName: !Sub "delete-user-${Stage}"
+            Runtime: !Ref Runtime
+            Handler: !Ref DeleteUserHandler
+            Code:
+                S3Bucket: !Ref ArtifactBucket
+                S3Key: !Ref ArtifactKey
+            Role: !GetAtt DeleteUserRole.Arn
+            Architectures:
+                - arm64
+            Timeout: 30
+            MemorySize: 512
+            Environment:
+                Variables:
+                    USERS_TABLE: !Ref UsersTable
+
+    SendEmailFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+            FunctionName: !Sub "send-email-${Stage}"
+            Runtime: !Ref Runtime
+            Handler: !Ref SendEmailHandler
+            Code:
+                S3Bucket: !Ref ArtifactBucket
+                S3Key: !Ref ArtifactKey
+            Role: !GetAtt SendEmailRole.Arn
+            Architectures:
+                - arm64
+            Timeout: 30
+            MemorySize: 512
+
+    # ============================================================
+    # Lambda Permissions (allow API Gateway to invoke)
+    # ============================================================
+    CreateUserPermission:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref CreateUserFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*"
+
+    GetUserPermission:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref GetUserFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*"
+
+    UpdateUserPermission:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref UpdateUserFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*"
+
+    DeleteUserPermission:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref DeleteUserFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*"
+
+    # ============================================================
+    # API Gateway Routes & Integrations
+    # ============================================================
+    CreateUserIntegration:
+        Type: AWS::ApiGatewayV2::Integration
+        Properties:
+            ApiId: !Ref HttpApi
+            IntegrationType: AWS_PROXY
+            IntegrationUri: !GetAtt CreateUserFunction.Arn
+            PayloadFormatVersion: "2.0"
+
+    CreateUserRoute:
+        Type: AWS::ApiGatewayV2::Route
+        Properties:
+            ApiId: !Ref HttpApi
+            RouteKey: "POST /users"
+            Target: !Sub "integrations/${CreateUserIntegration}"
+
+    GetUserIntegration:
+        Type: AWS::ApiGatewayV2::Integration
+        Properties:
+            ApiId: !Ref HttpApi
+            IntegrationType: AWS_PROXY
+            IntegrationUri: !GetAtt GetUserFunction.Arn
+            PayloadFormatVersion: "2.0"
+
+    GetUserRoute:
+        Type: AWS::ApiGatewayV2::Route
+        Properties:
+            ApiId: !Ref HttpApi
+            RouteKey: "GET /users/{userId}"
+            Target: !Sub "integrations/${GetUserIntegration}"
+
+    UpdateUserIntegration:
+        Type: AWS::ApiGatewayV2::Integration
+        Properties:
+            ApiId: !Ref HttpApi
+            IntegrationType: AWS_PROXY
+            IntegrationUri: !GetAtt UpdateUserFunction.Arn
+            PayloadFormatVersion: "2.0"
+
+    UpdateUserRoute:
+        Type: AWS::ApiGatewayV2::Route
+        Properties:
+            ApiId: !Ref HttpApi
+            RouteKey: "PUT /users/{userId}"
+            Target: !Sub "integrations/${UpdateUserIntegration}"
+
+    DeleteUserIntegration:
+        Type: AWS::ApiGatewayV2::Integration
+        Properties:
+            ApiId: !Ref HttpApi
+            IntegrationType: AWS_PROXY
+            IntegrationUri: !GetAtt DeleteUserFunction.Arn
+            PayloadFormatVersion: "2.0"
+
+    DeleteUserRoute:
+        Type: AWS::ApiGatewayV2::Route
+        Properties:
+            ApiId: !Ref HttpApi
+            RouteKey: "DELETE /users/{userId}"
+            Target: !Sub "integrations/${DeleteUserIntegration}"
+
+    # ============================================================
+    # SQS -> Lambda Event Source Mapping
+    # ============================================================
+    SendEmailEventSourceMapping:
+        Type: AWS::Lambda::EventSourceMapping
+        Properties:
+            EventSourceArn: !GetAtt UserCreatedQueue.Arn
+            FunctionName: !Ref SendEmailFunction
+            BatchSize: 10
+            Enabled: true
+
+Outputs:
+    ApiEndpoint:
+        Description: API Gateway endpoint URL
+        Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+
+    UsersTableName:
+        Description: DynamoDB table name
+        Value: !Ref UsersTable
+
+    QueueUrl:
+        Description: SQS Queue URL
+        Value: !Ref UserCreatedQueue
+
+    TopicArn:
+        Description: SNS Topic ARN
+        Value: !Ref UserNotificationTopic
