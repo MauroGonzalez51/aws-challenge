@@ -6,27 +6,27 @@
         },
         {
             "path": "../apps/users",
-            "name": "[ APP ] Users",
+            "name": "# Users",
         },
         {
             "path": "../apps/serverless/node",
-            "name": "[ APP ] Serverless-Node",
+            "name": "# Serverless-Node",
         },
         {
             "path": "../apps/serverless/java",
-            "name": "[ APP ] Serverless-Java",
+            "name": "# Serverless-Java",
         },
         {
             "path": "../packages/iac",
-            "name": "[ PACKAGES ] IAC",
+            "name": "+ IAC",
         },
         {
             "path": "../tools/eslint",
-            "name": "[ TOOL ]  ESLint",
+            "name": "@  ESLint",
         },
         {
             "path": "../tools/tsconfig",
-            "name": "[ TOOL ] TS-Config",
+            "name": "@ TS-Config",
         },
     ],
     "settings": {

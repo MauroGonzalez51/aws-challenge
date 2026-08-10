@@ -1,6 +1,7 @@
 {
     "name": "@aws-challenge/apps-serverless-java",
     "dependencies": {
+        "@aws-sdk/client-dynamodb": "^3.1105.0",
         "@serverless/typescript": "^4.30.0"
     },
     "devDependencies": {

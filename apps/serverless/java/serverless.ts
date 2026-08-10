@@ -1,19 +1,30 @@
 /* eslint-disable no-template-curly-in-string */
+import type {
+    AttributeDefinition,
+    GlobalSecondaryIndex,
+    KeySchemaElement,
+} from "@aws-sdk/client-dynamodb";
 import type { AWS } from "@serverless/typescript";
+import {
+    BillingMode,
+    KeyType,
+    ProjectionType,
+    ScalarAttributeType,
+} from "@aws-sdk/client-dynamodb";
 
 export default {
     org: "maurogonzalez51",
-    service: "aws-challenge-serverless-java",
+    service: "aws-challenge-serverless-node",
     stages: {
         default: {
             params: {
-                tableName: "users-table-java-${sls:stage}",
+                tableName: "users-table-${sls:stage}",
             },
         },
     },
     provider: {
         name: "aws",
-        runtime: "java21",
+        runtime: "nodejs24.x",
         architecture: "arm64",
         iam: {
             role: {
@@ -33,7 +44,7 @@ export default {
     },
     functions: {
         createUser: {
-            handler: "com.pragma.handlers.CreateUserHandler",
+            handler: "src/functions/create-user.handler",
             environment: {
                 SQS_QUEUE_URL: { Ref: "UserCreatedQueue" },
             },
@@ -42,6 +53,12 @@ export default {
                     httpApi: {
                         method: "POST",
                         path: "/users",
+                    },
+                },
+                {
+                    httpApi: {
+                        method: "GET",
+                        path: "/docs/create-user/{proxy+}",
                     },
                 },
             ],
@@ -63,12 +80,18 @@ export default {
             },
         },
         getUser: {
-            handler: "com.pragma.handlers.GetUserHandler",
+            handler: "src/functions/get-user.handler",
             events: [
                 {
                     httpApi: {
                         method: "GET",
                         path: "/users/{userId}",
+                    },
+                },
+                {
+                    httpApi: {
+                        method: "GET",
+                        path: "/docs/get-user/{proxy+}",
                     },
                 },
             ],
@@ -85,12 +108,18 @@ export default {
             },
         },
         updateUser: {
-            handler: "com.pragma.handlers.UpdateUserHandler",
+            handler: "src/functions/update-user.handler",
             events: [
                 {
                     httpApi: {
                         method: "PUT",
                         path: "/users/{userId}",
+                    },
+                },
+                {
+                    httpApi: {
+                        method: "GET",
+                        path: "/docs/update-user/{proxy+}",
                     },
                 },
             ],
@@ -99,7 +128,7 @@ export default {
                     statements: [
                         {
                             Effect: "Allow",
-                            Action: ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:DeleteItem", "dynamodb:ConditionCheckItem"],
+                            Action: ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:DeleteItem"],
                             Resource: { "Fn::GetAtt": ["UsersTable", "Arn"] },
                         },
                     ],
@@ -107,12 +136,18 @@ export default {
             },
         },
         deleteUser: {
-            handler: "com.pragma.handlers.DeleteUserHandler",
+            handler: "src/functions/delete-user.handler",
             events: [
                 {
                     httpApi: {
                         method: "DELETE",
                         path: "/users/{userId}",
+                    },
+                },
+                {
+                    httpApi: {
+                        method: "GET",
+                        path: "/docs/delete-user/{proxy+}",
                     },
                 },
             ],
@@ -129,7 +164,10 @@ export default {
             },
         },
         sendEmail: {
-            handler: "com.pragma.handlers.SendEmailHandler",
+            handler: "src/functions/send-email.handler",
+            environment: {
+                SNS_TOPIC_ARN: { Ref: "UserNotificationTopic" },
+            },
             events: [
                 {
                     sqs: {
@@ -139,6 +177,17 @@ export default {
                     },
                 },
             ],
+            iam: {
+                role: {
+                    statements: [
+                        {
+                            Effect: "Allow",
+                            Action: ["sns:Publish"],
+                            Resource: { Ref: "UserNotificationTopic" },
+                        },
+                    ],
+                },
+            },
         },
     },
     resources: {
@@ -149,41 +198,41 @@ export default {
                     AttributeDefinitions: [
                         {
                             AttributeName: "id",
-                            AttributeType: "S",
+                            AttributeType: ScalarAttributeType.S,
                         },
                         {
                             AttributeName: "email",
-                            AttributeType: "S",
+                            AttributeType: ScalarAttributeType.S,
                         },
-                    ],
+                    ] satisfies AttributeDefinition[],
                     KeySchema: [
                         {
                             AttributeName: "id",
-                            KeyType: "HASH",
+                            KeyType: KeyType.HASH,
                         },
-                    ],
+                    ] satisfies KeySchemaElement[],
                     GlobalSecondaryIndexes: [
                         {
                             IndexName: "email-index",
                             KeySchema: [
                                 {
                                     AttributeName: "email",
-                                    KeyType: "HASH",
+                                    KeyType: KeyType.HASH,
                                 },
                             ],
                             Projection: {
-                                ProjectionType: "ALL",
+                                ProjectionType: ProjectionType.ALL,
                             },
                         },
-                    ],
-                    BillingMode: "PAY_PER_REQUEST",
+                    ] satisfies GlobalSecondaryIndex[],
+                    BillingMode: BillingMode.PAY_PER_REQUEST,
                     TableName: "${param:tableName}",
                 },
             },
             UserCreatedQueue: {
                 Type: "AWS::SQS::Queue",
                 Properties: {
-                    QueueName: "user-created-queue-java-${sls:stage}",
+                    QueueName: "user-created-queue-${sls:stage}",
                 },
             },
             UserCreatedQueuePolicy: {
@@ -196,10 +245,7 @@ export default {
                                 Effect: "Allow",
                                 Principal: {
                                     AWS: {
-                                        "Fn::GetAtt": [
-                                            "CreateUserIamRoleLambdaExecution",
-                                            "Arn",
-                                        ],
+                                        "Fn::GetAtt": ["CreateUserIamRoleLambdaExecution", "Arn"],
                                     },
                                 },
                                 Action: "sqs:SendMessage",
@@ -209,10 +255,7 @@ export default {
                                 Effect: "Allow",
                                 Principal: {
                                     AWS: {
-                                        "Fn::GetAtt": [
-                                            "SendEmailIamRoleLambdaExecution",
-                                            "Arn",
-                                        ],
+                                        "Fn::GetAtt": ["SendEmailIamRoleLambdaExecution", "Arn"],
                                     },
                                 },
                                 Action: [
@@ -229,13 +272,11 @@ export default {
             UserNotificationTopic: {
                 Type: "AWS::SNS::Topic",
                 Properties: {
-                    TopicName: "user-notification-topic-java-${sls:stage}",
+                    TopicName: "user-notification-topic-${sls:stage}",
                 },
             },
         },
     },
-    package: {
-        artifact: "build/libs/serverless-java-all.jar",
-    },
+    build: { esbuild: { bundle: true, minify: true } },
     plugins: ["serverless-offline"],
 } satisfies AWS;

@@ -165,6 +165,9 @@ export default {
         },
         sendEmail: {
             handler: "src/functions/send-email.handler",
+            environment: {
+                SNS_TOPIC_ARN: { Ref: "UserNotificationTopic" },
+            },
             events: [
                 {
                     sqs: {
@@ -174,6 +177,17 @@ export default {
                     },
                 },
             ],
+            iam: {
+                role: {
+                    statements: [
+                        {
+                            Effect: "Allow",
+                            Action: ["sns:Publish"],
+                            Resource: { Ref: "UserNotificationTopic" },
+                        },
+                    ],
+                },
+            },
         },
     },
     resources: {
