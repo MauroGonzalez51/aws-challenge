@@ -9,7 +9,7 @@ import { dynamoDBClient } from "@/lib/client";
 import { consola } from "@/lib/logger";
 import { ErrorSchema } from "@/models";
 
-const app = new Hono();
+export const app = new Hono();
 const { docClient } = dynamoDBClient();
 
 app.use("/*", cors());

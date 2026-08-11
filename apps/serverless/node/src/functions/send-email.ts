@@ -5,7 +5,8 @@ import { UserSchema } from "@/models/user";
 
 const snsClient = new SNSClient();
 
-const TOPIC_ARN = process.env.SNS_TOPIC_ARN;
+// eslint-disable-next-line dot-notation
+const TOPIC_ARN = process.env["SNS_TOPIC_ARN"];
 
 export const handler: SQSHandler = async (event) => {
     for (const record of event.Records) {

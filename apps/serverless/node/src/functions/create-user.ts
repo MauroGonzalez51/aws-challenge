@@ -10,7 +10,7 @@ import { dynamoDBClient } from "@/lib/client";
 import { consola } from "@/lib/logger";
 import { CreateUserSchema, ErrorSchema, UserSchema } from "@/models";
 
-const app = new Hono();
+export const app = new Hono();
 const { docClient } = dynamoDBClient();
 const sqsClient = new SQSClient();
 

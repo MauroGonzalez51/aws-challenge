@@ -9,7 +9,7 @@ import { dynamoDBClient } from "@/lib/client";
 import { consola } from "@/lib/logger";
 import { ErrorSchema, UserSchema } from "@/models";
 
-const app = new Hono();
+export const app = new Hono();
 const { docClient } = dynamoDBClient();
 
 app.use("/*", cors());
@@ -93,6 +93,8 @@ app.get(
                 context.status(400);
                 return context.json({ error: "validation errors", data: record.error.issues });
             }
+
+            throw new Error("could not find user");
         } catch (error) {
             consola.error(error);
 
