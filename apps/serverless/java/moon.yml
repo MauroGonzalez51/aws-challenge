@@ -45,7 +45,12 @@ tasks:
             runFromWorkspaceRoot: false
 
     gradle:
-        script: gradle
+        command: gradle
         options:
             cache: false
             runFromWorkspaceRoot: false
+
+    test:
+        command: gradle
+        args:
+            - test

@@ -18,8 +18,16 @@ import java.util.Map;
 
 public class UpdateUserHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse> {
 
-    private final DynamoDbClient dynamoDb = DynamoDBClientProvider.getClient();
+    private final DynamoDbClient dynamoDb;
     private final Gson gson = new Gson();
+
+    public UpdateUserHandler() {
+        this.dynamoDb = DynamoDBClientProvider.getClient();
+    }
+
+    UpdateUserHandler(DynamoDbClient dynamoDb) {
+        this.dynamoDb = dynamoDb;
+    }
 
     @Override
     public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent event, Context context) {

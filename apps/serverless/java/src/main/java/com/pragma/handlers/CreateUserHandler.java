@@ -20,9 +20,19 @@ import java.util.Map;
 
 public class CreateUserHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse> {
 
-    private final DynamoDbClient dynamoDb = DynamoDBClientProvider.getClient();
-    private final SqsClient sqs = SqsClient.create();
+    private final DynamoDbClient dynamoDb;
+    private final SqsClient sqs;
     private final Gson gson = new Gson();
+
+    public CreateUserHandler() {
+        this.dynamoDb = DynamoDBClientProvider.getClient();
+        this.sqs = SqsClient.create();
+    }
+
+    CreateUserHandler(DynamoDbClient dynamoDb, SqsClient sqs) {
+        this.dynamoDb = dynamoDb;
+        this.sqs = sqs;
+    }
 
     @Override
     public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent event, Context context) {

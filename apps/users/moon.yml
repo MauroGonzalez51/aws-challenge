@@ -20,3 +20,8 @@ tasks:
             cache: false
             interactive: true
             runFromWorkspaceRoot: false
+
+    test:
+        command: ./gradlew
+        args:
+            - test
