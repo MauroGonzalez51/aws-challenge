@@ -14,7 +14,7 @@ import {
 
 export default {
     org: "maurogonzalez51",
-    service: "aws-challenge-serverless-node",
+    service: "aws-challenge-serverless-java",
     stages: {
         default: {
             params: {
@@ -24,7 +24,7 @@ export default {
     },
     provider: {
         name: "aws",
-        runtime: "nodejs24.x",
+        runtime: "java21",
         architecture: "arm64",
         iam: {
             role: {
@@ -42,9 +42,13 @@ export default {
             USERS_TABLE: "${param:tableName}",
         },
     },
+    package: {
+        individually: false,
+        artifact: "build/libs/serverless-java-all.jar",
+    },
     functions: {
         createUser: {
-            handler: "src/functions/create-user.handler",
+            handler: "com.pragma.handlers.CreateUserHandler",
             environment: {
                 SQS_QUEUE_URL: { Ref: "UserCreatedQueue" },
             },
@@ -80,7 +84,7 @@ export default {
             },
         },
         getUser: {
-            handler: "src/functions/get-user.handler",
+            handler: "com.pragma.handlers.GetUserHandler",
             events: [
                 {
                     httpApi: {
@@ -108,7 +112,7 @@ export default {
             },
         },
         updateUser: {
-            handler: "src/functions/update-user.handler",
+            handler: "com.pragma.handlers.UpdateUserHandler",
             events: [
                 {
                     httpApi: {
@@ -136,7 +140,7 @@ export default {
             },
         },
         deleteUser: {
-            handler: "src/functions/delete-user.handler",
+            handler: "com.pragma.handlers.DeleteUserHandler",
             events: [
                 {
                     httpApi: {
@@ -164,7 +168,7 @@ export default {
             },
         },
         sendEmail: {
-            handler: "src/functions/send-email.handler",
+            handler: "com.pragma.handlers.SendEmailHandler",
             environment: {
                 SNS_TOPIC_ARN: { Ref: "UserNotificationTopic" },
             },
@@ -277,6 +281,4 @@ export default {
             },
         },
     },
-    build: { esbuild: { bundle: true, minify: true } },
-    plugins: ["serverless-offline"],
 } satisfies AWS;

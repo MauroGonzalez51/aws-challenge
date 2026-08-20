@@ -16,6 +16,8 @@ tasks:
 
     sls:
         command: sls
+        deps:
+            - ~:build
         preset: server
         options:
             cache: false
@@ -46,6 +48,14 @@ tasks:
 
     gradle:
         command: gradle
+        options:
+            cache: false
+            runFromWorkspaceRoot: false
+
+    build:
+        command: gradle
+        args:
+            - build
         options:
             cache: false
             runFromWorkspaceRoot: false
