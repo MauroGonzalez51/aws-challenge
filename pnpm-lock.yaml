@@ -31,6 +31,9 @@ importers:
         specifier: ^4.30.0
         version: 4.30.0
     devDependencies:
+      serverless:
+        specifier: ^4.42.0
+        version: 4.42.0
       serverless-offline:
         specifier: ^14.7.4
         version: 14.8.0(serverless@4.41.0)
@@ -98,9 +101,12 @@ importers:
       eslint:
         specifier: ^10.8.0
         version: 10.8.1
+      serverless:
+        specifier: ^4.42.0
+        version: 4.42.0
       serverless-offline:
         specifier: ^14.7.4
-        version: 14.8.0(serverless@4.41.0)
+        version: 14.8.0(serverless@4.42.0)
       tsx:
         specifier: ^4.23.12
         version: 4.23.12
@@ -2871,6 +2877,11 @@ packages:
     engines: {node: '>=18.17.0'}
     hasBin: true
 
+  serverless@4.42.0:
+    resolution: {integrity: sha512-auc1KKlWN1VEkA6bljjWIp3NFISnTRnhbRr69P/Z0lF1WJxxHrsUZfeWk9tPxeOWvfjCTjDZU7Nw33dtYw8MJw==}
+    engines: {node: '>=18.17.0'}
+    hasBin: true
+
   set-function-length@1.2.2:
     resolution: {integrity: sha512-pgRc4hJ4/sNjWCSS9AmnS40x3bNMDTknHgL5UaMBTMyJnU90EgWh1Rz+MC9eFu4BuN/UwZjKQuY/1v3rM7HMfg==}
     engines: {node: '>= 0.4'}
@@ -3075,6 +3086,10 @@ packages:
 
   undici@6.28.0:
     resolution: {integrity: sha512-LIY910g9TI13YS95lrMFrs8Rm/u/irgHeTWoKCoteeJ04CUJ92eEfj0rVn+7VKMPBpUPiUoBKfhNyLI23EE/KA==}
+    engines: {node: '>=18.17'}
+
+  undici@6.28.1:
+    resolution: {integrity: sha512-zWpdTVD54H48CIybL0rWQ3ukpb9d23wM7eH5RtfdmeP70cWHNjtfo7P4vZX+5CoDcO53J4Pu5uXp7lNfjc6DRA==}
     engines: {node: '>=18.17'}
 
   unist-util-is@6.0.1:
@@ -6222,9 +6237,46 @@ snapshots:
       - supports-color
       - utf-8-validate
 
+  serverless-offline@14.8.0(serverless@4.42.0):
+    dependencies:
+      '@aws-sdk/client-lambda': 3.1106.0
+      '@hapi/boom': 10.0.1
+      '@hapi/h2o2': 10.0.4
+      '@hapi/hapi': 21.4.10
+      array-unflat-js: 0.1.3
+      boxen: 7.1.1
+      chalk: 5.6.2
+      desm: 1.3.1
+      execa: 8.0.1
+      is-wsl: 3.1.1
+      java-invoke-local: 0.0.6
+      jose: 5.10.0
+      js-string-escape: 1.0.1
+      jsonpath-plus: 10.4.0
+      jsonschema: 1.5.0
+      jszip: 3.10.1
+      luxon: 3.7.2
+      nock: 13.5.6
+      node-fetch: 3.3.2
+      node-schedule: 2.1.1
+      p-memoize: 7.1.1
+      serverless: 4.42.0
+      tree-kill: 1.2.2
+      tsx: 4.23.12
+      velocityjs: 2.1.7
+      ws: 8.21.3
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+
   serverless@4.41.0:
     dependencies:
       undici: 6.28.0
+
+  serverless@4.42.0:
+    dependencies:
+      undici: 6.28.1
 
   set-function-length@1.2.2:
     dependencies:
@@ -6415,6 +6467,8 @@ snapshots:
   undici-types@8.3.0: {}
 
   undici@6.28.0: {}
+
+  undici@6.28.1: {}
 
   unist-util-is@6.0.1:
     dependencies:

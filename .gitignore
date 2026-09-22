@@ -2,3 +2,4 @@
 .moon/docker
 node_modules
 bin
+.serverless

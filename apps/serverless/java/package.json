@@ -5,6 +5,7 @@
         "@serverless/typescript": "^4.30.0"
     },
     "devDependencies": {
+        "serverless": "^4.42.0",
         "serverless-offline": "^14.7.4"
     }
 }
